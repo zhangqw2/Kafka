@@ -15,3 +15,11 @@ What is Kaka?
 &emsp;&emsp;一个典型的Kafka体系架构包括若干Producer、若干Broker、若干Consumer，以及一个ZooKeeper集群，其中ZooKeeper是Kafka用来负责集群元数据的管理、控制器的选举等操作的。Producer将消息发送到Broker,Broker负责将收到的消息存储到磁盘中，而Consumer负责从Broker订阅并消费消息
 
 ![image](https://github.com/zhangqw2/Kafka/blob/main/kafka%E4%BD%93%E7%B3%BB%E7%BB%93%E6%9E%84.png)
+
+整个Kafka体系结构中引入以下3个术语：
+
+ (1）Producer: 生产者，也就是发送数据的一方。生产者负责创建消息，然后将其投递到Kafka中.
+
+ (2) Consumer: 消费者，也就是接收消息的一方。消费者连接到Kafka上并接收消息，进而进行相应的业务逻辑处理。
+ 
+ (3) Broker: 服务代理节点。对于Kafka而言，Broker可以简单地看作一个独立的Kafka服务节点或Kafka服务实例。一个或多个Broker组成一个Kafka集群。一般习惯使用首字母小写的broker来表示服务代理节点。
