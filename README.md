@@ -41,8 +41,15 @@ What is Kaka?
 ![image](https://github.com/zhangqw2/Kafka/blob/main/%E5%A4%9A%E5%89%AF%E6%9C%AC%E6%9E%B6%E6%9E%84.png)
 
 &emsp;&emsp;如上图所示，Kafka集群中有4个broker，某个主题3个分区，3个副本因子，如此每个分区便有1个leader副本和2个follower副本，生产者和消费者只与leader副本进行交互，而follower副本只负责消息同步，很多时候follower副本中的消息相对于leader副本而言会有一定滞后。
+
 &emsp;&emsp;Kafka消费端也具备一定的容灾能力。Consumer使用拉(Pull)模式从服务端拉取消息并且保存消费的具体位置，当消费者宕机后恢复上线时可以根据之前保存的消费位置重新拉取需要的消息进行消费，这样就不会造成消息丢失。
 
 **AR、ISR、OSR**
+&emsp;&emsp;分区中的所有副本统称为AR(Assigned Replicas)。所有域leader副本保持一定程度同步的副本(包含leader副本在内)组成ISR(In-Sync Replicas),ISR集合是AR集合中的一个子集。消息会先发送到leader副本，然后follower副本才能从leader副本拉取消息进行同步，同步期间内follower副本相对于leader副本而言会有一定程度的滞后。可以通过参数进行配置，限制滞后范围。与leader副本同步滞后过多的副本(不包括leader副本)组成OSR(Out-of-Sync Replicas)，由此可见，AR=ISR+OSR。在正常情况下，所有的follower副本都应该与leader副本保持一定程度的同步，即AR=ISR，OSR集合为空。
 
+![image](https://github.com/zhangqw2/Kafka/blob/main/AR-ISR-OSR.png)
+
+&emsp;&emsp;leader副本负责维护和跟踪ISR集合中所有follower副本的滞后状态，当follwer副本落后太多或失效时，leader副本会把它从ISR集合中剔除。如果OSR集合中有follwer副本”追上“了leader副本，那么leader副本会把它从OSR集合转移至ISR集合。默认情况下，当leader副本发生故障时，只有在ISR集合中的副本才有资格被选举为新的leader，而在OSR集合中副本则没有任何机会(可以通过修改相应的参数配置来修改此原则)。
+
+**ISR、HW、LEO**
 
