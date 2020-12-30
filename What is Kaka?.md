@@ -63,8 +63,106 @@
 &emsp;&emsp;由此可见，Kafka 的复制机制既不是完全的同步复制，也不是单纯的异步复制。事实上，同步复制要求所有能工作的follower副本都复制完，这条消息才会被确认为已成功提交，这种复制方式极大地影响了性能。而在异步复制方式下，follower副本异步地从leader副本中复制数据，数据只要被leader副本写入就被认为已经成功提交。在这种情况下，如果follower副本都还没有复制完而落后于leader副本，突然leader副本着机，则会造成数据丢失。 Kafka 使用的这ISR的方式则有效地权衡了数据可靠性和性能之间的关系。
 
 ## 二、安装与配置
-&emsp;&emsp;
+
+
+### 2.1  JDK1.8
+
+&emsp;&emsp;以Linux服务器为例,下载jdk-8ul8l-linux-x6.tar.gz,解压至/opt
+```
+ vim /etc/profile ,在末尾添加如下配置:
+ 
+export JAVA_HOME=/opt/jdk1.8.0_181 
+export JRE_HOME=$JAVA_HOME/jre
+export PATH=$PATH:$JAVA_HOME/bin 
+export CLASSPATH= ./://$JAVA_HOME/lib:JRE_HOME/lib
+ 
+然后,执行source /etc/profile 命令时配置生效。
+执行java -version命令，验证是否安装成功，输出java版本信息
+```
+### 2.2 ZooKeeper安装与配置
+
+&emsp;&emsp;ZooKeeper是安装Kafka集群的必要组件，Kafka通过ZooKeeper来实施对元数据信息的管理，包括集群、broker、主题、分区等内容。在ZooKeeper中共有3个角色:leader、follower和observer,同一时刻ZooKeeper集群中只会有一个leader，其他都是follower和observer。observer不参与投票，默认情况下ZooKeeper中只有leader和follwer两个角色。
 
 ```
- JDK1.8
+第一步,下载 Zookeeper-3.4.12.tar.gz 安装包，并解压至/opt目录下。
+第二步,向/etc/profile配置文件中添加如下内容，并执行source /etc/profile命令使配置生效:
+export ZOOKEEPER_HOME=/opt/zookeeper-3.4.12 
+export PATH=$PATH:$ZOOKEEPER_HOME/bin
+第三步,修改Zookeeper的配置文件。首先进入$ZOOKEEPER_ HOME/conf 目录,并将
+zoo_sample.cfg 文件修改为 zoo.cfg:
+ cp zoo_sample.cfg zoo.cfg
+ 修改zoo.cfg配置文件,zoo.cfg文件的内容参考如下:
+ 
+ # ZooKeeper服务器心跳时间， 单位为 ms
+tickTime=2000
+＃投票选举新 leader 的初始化时间
+initLimit=lO
+# leader foll ower 跳检测最大容忍时间，响应超过 syncLimit*tickTime leader 认为
+# follower “死掉 ，从服务器列表中删除 follower
+syncLimit=5
+＃数据目录
+dataDir=/tmp/zookeeper/data 
+日志目录
+dataLogDir=/tmp/zookeeper/log 
+# ZooKeeper 对外服务端口
+clientPort=2181
+
+默认情况下,Linux系统中没有/tmp/zookeeper/data和tmp/zookeeper/log这个两个目录,所以需要手动创建。
+第四步,在${dataDir}(/tmp/zookeeper/data)目录下创建一个myid文件，并写入一个数值，比如0。myid文件里存放的是服务器编号。
+第五步,启动Zookeeper服务
+zkServer.sh start
+可以通过zkServer.sh status命令查看Zookeeper服务状态。
+
+以上是Zookeeper的单机配置模式
+
+对于集群模式:
+假设有三台Linux服务器，首先修改3台的服务器的/etc/hosts文件，示例如下:
+192.168.0.2 node1
+192.168.0.3 node2
+192.168.0.4 node3
+
+然后在这3台机器的zoo.cfg文件中添加以下配置:
+
+server.0=192.168.0.2:2888:3888
+server.1=192.168.0.3:2888:3888
+server.2=192.168.0.4:2888:3888
+
+为了便于说明，可以抽象出一个公式,即server.A=B:C:D。其中A是一个数字，代表服务器的编号，就是myid文件里面的值。
+集群中每台服务器的编号必须唯一，所以要保证每台服务器中的myid文件中的值不同。B代表的是服务器的IP地址。
+C表示服务器与集群中的leader服务交换信息的端口。D表示选举时服务器相互通信的端口。
+
+配置完成后在3台机器上各自执行zkServer.sh start启动服务。
+```
+### 2.3 Kafka安装与配置
+
+```
+下载kafka_2.11-2.0.0.tgz，解压至/opt目录下
+参考zookeeper将KAFKA_HOME添加到/etc/pfofile文件中
+
+修改broker的配置文件$KAFKA_HOME/conf/server.properties,主要关注以下几个配置参数即可:
+# broker的编号，如果集群中有多个broker ，则每个broker的编号需要设置的不同
+broker.i d=O 
+# broker对外提供服务入口地址
+listeners= PLAINTEXT//localhost:9092
+＃存放消息日志文件的地址
+log.dirs= /tmp/kafka-logs
+# Kafka 所需的ZooKeeper集群地址，为了方便演示，我们假设Kafka和ZooKeeper 都安装在本机
+zookeeper.connect=localhost:2181/kafka
+
+如果是单机模式，那么修改完上述配置就可以启动了。
+如果是集群模式，确保集群中每个broker的broker.id 配置数的值不一样，
+以及 listeners 配置参数也需要修改为与broker对应的IP地址域名，之后就可以各自启动服务 。
+注意 ，在启动Kafka服务之前同样需要确保zookeeper.connect参数所配置的ZooKeeper服务正确启动。
+
+```
+
+&emsp;&emsp;可以使用以下命令启动Kakfa
+```
+后台启动:
+bin/kafka-server-start.sh -daemon config/server.properties
+bin/kafka-server-start.sh config/server.properties &
+界面启动
+bin/kafka-server-start.sh config/server.properties
+
+通过jps -l 命令查看kafka服务进程是否已经启动
 ```
