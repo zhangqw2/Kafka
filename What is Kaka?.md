@@ -1,5 +1,4 @@
 # Kafka
-What is Kaka?
 
 &emsp;&emsp;Kafka 是一个多分区、多副本且基于 ZooKeeper 
 协调的分布式消息系统，目前 Kafka 已经定位为一个分布式流式
@@ -53,3 +52,19 @@ What is Kaka?
 
 **ISR、HW、LEO**
 
+&emsp;&emsp;HW是High Watermark的缩写，俗称高水位，它标识了一个特定的消息偏移量(offset)，消费者只能拉取到这个offset之前的消息。
+
+![image](https://github.com/zhangqw2/Kafka/blob/main/%E5%88%86%E5%8C%BA%E5%81%8F%E7%A7%BB%E9%87%8F%E8%AF%B4%E6%98%8E.png)
+
+&emsp;&emsp;如上图所示，它代表一个日志文件，这个日志文件中有9条消息，第一条消息的offset为0，最后一条offset为8，offset为9的消息用虚线框表示，代表下一条待写入的消息。日志文件HW为6，表示消费组只能拉取到offset在0~5之间的消息，而offset为6的消息对消费者而言是不可见的。
+
+&emsp;&emsp;LEO是Log End Offset的缩写，它标识当前日志文件中下一条待写入消息的offset，LEO的大小相当于当前日志分区中最后一条消息的offset值加1。分区ISR集合中每个副本都会维护自身的LEO，而ISR集合中最小的LEO即为分区的HW，对消费者而言只能消费HW之前的消息。
+
+&emsp;&emsp;由此可见，Kafka 的复制机制既不是完全的同步复制，也不是单纯的异步复制。事实上，同步复制要求所有能工作的follower副本都复制完，这条消息才会被确认为已成功提交，这种复制方式极大地影响了性能。而在异步复制方式下，follower副本异步地从leader副本中复制数据，数据只要被leader副本写入就被认为已经成功提交。在这种情况下，如果follower副本都还没有复制完而落后于leader副本，突然leader副本着机，则会造成数据丢失。 Kafka 使用的这ISR的方式则有效地权衡了数据可靠性和性能之间的关系。
+
+## 二、安装与配置
+&emsp;&emsp;
+
+```
+ JDK1.8
+```
