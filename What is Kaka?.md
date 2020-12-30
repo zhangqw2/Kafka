@@ -166,3 +166,36 @@ bin/kafka-server-start.sh config/server.properties
 
 通过jps -l 命令查看kafka服务进程是否已经启动
 ```
+
+## 三、生产与消费
+
+&emsp;&emsp;Kafka提供了许多实用的脚本工具，存放在$KAFKA_HOME的bin目录下
+```
+1.创建Topic
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic test
+
+其中--zookeeper指定了Kafka所连接的ZooKeeper服务地址，--topic指定了所要
+创建主题的名称，--replication-factor指定了副本因子，--partitions指定了分区个数，
+,--create是创建主题的动作指令
+2.查看Topic
+bin/kafka-topics.sh --list --zookeeper localhost:2181
+
+bin/kafka-topics.sh  --zookeeper localhost:2181 --describe --topic test
+
+Topic: test	PartitionCount: 1	ReplicationFactor: 1	Configs: 
+	Topic: test	Partition: 0	Leader: 0	Replicas: 0	Isr: 0
+3.生产者
+bin/kafka-console-producer.sh --broker-list localhost:9092 --topic test
+
+--broker-list 指定了连接kafka集群地址
+4.消费者
+
+bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic test --from-beginning
+
+--bootstrap-server 指定了连接kafka集群地址
+5.查看所有消费组
+
+bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --list
+
+bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group console-consumer-20297
+```
