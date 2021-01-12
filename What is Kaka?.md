@@ -199,3 +199,89 @@ bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --list
 
 bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group console-consumer-20297
 ```
+
+```xml
+<dependency> 
+   <groupid>org.apache.kafka</groupid> 
+   <artifactid>kafka.clients</artifactid> 
+   <version>2.0.0</version> 
+</dependency>
+```
+
+或者
+
+```xml
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+```
+
+```java
+package com.springboot.kafka;
+
+
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.junit.Test;
+
+import org.springframework.boot.test.context.SpringBootTest;
+
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Properties;
+
+
+@SpringBootTest
+public class KafkaTests {
+    public static final String brokerList = "localhost:9092";
+    public static final String topic = "topic-demo";
+    public static final String groupId = "group.demo";
+
+    @Test
+    public void contextLoads() {
+        System.out.println("Hello SpringBoot!");
+        Properties properties = new Properties();
+        properties.put("key.serializer","org.apache.kafka.common.serialization.StringSerializer");
+        properties.put("value.serializer","org.apache.kafka.common.serialization.StringSerializer");
+        properties.put("bootstrap.servers",brokerList);
+
+        KafkaProducer<String,String> producer = new KafkaProducer<String, String>(properties);
+
+        ProducerRecord<String,String> record = new ProducerRecord<>(topic,"hello,Kafka!");
+
+        try{
+            producer.send(record);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        producer.close();
+        System.out.println();
+    }
+
+    @Test
+    public void consumerTest(){
+        Properties properties = new Properties();
+        properties.put("key.deserializer","org.apache.kafka.common.serialization.StringDeserializer");
+        properties.put("value.deserializer","org.apache.kafka.common.serialization.StringDeserializer");
+        properties.put("bootstrap.servers",brokerList);
+        properties.put("group.id",groupId);
+
+        KafkaConsumer<String,String> consumer = new KafkaConsumer<String, String>(properties);
+        consumer.subscribe(Collections.singletonList(topic));
+
+        while(true){
+            ConsumerRecords<String,String> records = consumer.poll(Duration.ofMillis(1000));
+            for (ConsumerRecord<String,String> record : records){
+                System.out.println(record.value());
+            }
+        }
+    }
+
+}
+
+```
